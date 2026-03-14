@@ -1,3 +1,4 @@
+This was totally vibecoded so it's probably a big old vulnerability. Use at own risk.
 # 🛡 NetGuard — Network Monitor for Windows
 
 A lightweight "Little Snitch for Windows" — monitors every outbound network connection, alerts you when new apps phone home, and lets you block or allow them through Windows Firewall with one click.
