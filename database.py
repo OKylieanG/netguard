@@ -1,5 +1,5 @@
 """
-NetGuard — Database layer (SQLite)
+Dimedropper — Database layer (SQLite)
 Stores connection logs, firewall rules (allow/block), and app first-seen records.
 """
 
@@ -8,7 +8,7 @@ import threading
 import time
 import os
 
-DB_PATH = os.path.join(os.path.expanduser("~"), ".netguard", "netguard.db")
+DB_PATH = os.path.join(os.path.expanduser("~"), ".dimedropper", "dimedropper.db")
 
 
 def _ensure_dir():

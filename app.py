@@ -1,12 +1,15 @@
 """
-NetGuard — Main Application
+Dimedropper — Main Application
 System tray icon with popup notifications and a dashboard window.
 """
 
 import os
 import sys
 import time
+import hashlib
 import threading
+import webbrowser
+import urllib.parse
 import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -30,7 +33,7 @@ from database import (
 from firewall import is_admin, block_app, allow_app, remove_rule, sync_rule_to_firewall
 from resolver import resolve
 
-logger = logging.getLogger("netguard")
+logger = logging.getLogger("dimedropper")
 
 # ── Configuration ─────────────────────────────────────────────
 
@@ -87,7 +90,7 @@ class AlertPopup:
         self.result = None
 
         self.root = tk.Tk()
-        self.root.title("NetGuard Alert")
+        self.root.title("Dimedropper Alert")
         self.root.attributes("-topmost", True)
         self.root.overrideredirect(False)
         self.root.resizable(False, False)
@@ -97,7 +100,7 @@ class AlertPopup:
         offset = len(AlertPopup._active_popups) * 220
         screen_w = self.root.winfo_screenwidth()
         screen_h = self.root.winfo_screenheight()
-        win_w, win_h = 420, 200
+        win_w, win_h = 480, 210
         x = screen_w - win_w - 20
         y = screen_h - win_h - 60 - offset
         self.root.geometry(f"{win_w}x{win_h}+{x}+{y}")
@@ -142,21 +145,106 @@ class AlertPopup:
         btn_frame = tk.Frame(frame, bg="#1e1e2e")
         btn_frame.pack(fill="x", pady=(12, 0))
 
-        btn_style = {"font": ("Segoe UI", 9, "bold"), "width": 10, "cursor": "hand2", "relief": "flat", "bd": 0}
+        btn_style = {"font": ("Segoe UI", 9, "bold"), "width": 8, "cursor": "hand2", "relief": "flat", "bd": 0}
 
         tk.Button(
             btn_frame, text="✓ Allow", bg="#a6e3a1", fg="#1e1e2e",
             command=lambda: self._decide("allow"), **btn_style
-        ).pack(side="left", padx=(0, 8))
+        ).pack(side="left", padx=(0, 6))
 
         tk.Button(
             btn_frame, text="✕ Block", bg="#f38ba8", fg="#1e1e2e",
             command=lambda: self._decide("block"), **btn_style
-        ).pack(side="left", padx=(0, 8))
+        ).pack(side="left", padx=(0, 6))
+
+        tk.Button(
+            btn_frame, text="🔍 Research", bg="#cba6f7", fg="#1e1e2e",
+            command=self._research, **btn_style
+        ).pack(side="left", padx=(0, 6))
 
         tk.Button(
             btn_frame, text="Dismiss", bg="#45475a", fg="#cdd6f4",
             command=self._dismiss, **btn_style
+        ).pack(side="left")
+
+    def _research(self):
+        exe = self.conn.exe_path
+        app_name = self.conn.app_name or os.path.basename(exe)
+
+        win = tk.Toplevel(self.root)
+        win.title(f"Research: {app_name}")
+        win.configure(bg="#1e1e2e")
+        win.geometry("520x280")
+        win.attributes("-topmost", True)
+        win.resizable(False, False)
+
+        frame = tk.Frame(win, bg="#1e1e2e", padx=16, pady=12)
+        frame.pack(fill="both", expand=True)
+
+        tk.Label(
+            frame, text=f"🔍  {app_name}", bg="#1e1e2e", fg="#89b4fa",
+            font=("Segoe UI", 12, "bold")
+        ).pack(anchor="w")
+
+        tk.Label(
+            frame, text=exe, bg="#1e1e2e", fg="#585b70",
+            font=("Consolas", 8), wraplength=488, justify="left"
+        ).pack(anchor="w", pady=(3, 0))
+
+        # File size
+        try:
+            size = os.path.getsize(exe)
+            size_str = f"{size:,} bytes  ({size / 1024 / 1024:.2f} MB)"
+        except OSError:
+            size_str = "unavailable"
+        tk.Label(
+            frame, text=f"Size:    {size_str}", bg="#1e1e2e", fg="#cdd6f4",
+            font=("Consolas", 9)
+        ).pack(anchor="w", pady=(10, 0))
+
+        # SHA256 — computed in background thread
+        hash_var = tk.StringVar(value="SHA256:  computing…")
+        tk.Label(
+            frame, textvariable=hash_var, bg="#1e1e2e", fg="#cdd6f4",
+            font=("Consolas", 9)
+        ).pack(anchor="w", pady=(2, 0))
+
+        def _compute_hash():
+            try:
+                sha256 = hashlib.sha256()
+                with open(exe, "rb") as f:
+                    for chunk in iter(lambda: f.read(65536), b""):
+                        sha256.update(chunk)
+                h = sha256.hexdigest()
+                win.after(0, lambda: hash_var.set(f"SHA256:  {h}"))
+            except Exception as exc:
+                win.after(0, lambda: hash_var.set(f"SHA256:  error — {exc}"))
+
+        threading.Thread(target=_compute_hash, daemon=True).start()
+
+        # Buttons
+        btn_frame = tk.Frame(frame, bg="#1e1e2e")
+        btn_frame.pack(fill="x", pady=(18, 0))
+
+        lnk_style = {"font": ("Segoe UI", 9, "bold"), "cursor": "hand2", "relief": "flat", "bd": 0, "padx": 10, "pady": 4}
+
+        query = urllib.parse.quote(f"{app_name} {os.path.basename(exe)}")
+        tk.Button(
+            btn_frame, text="🌐 Google", bg="#89b4fa", fg="#1e1e2e",
+            command=lambda: webbrowser.open(f"https://www.google.com/search?q={query}"),
+            **lnk_style
+        ).pack(side="left", padx=(0, 8))
+
+        vt_name = urllib.parse.quote(os.path.basename(exe))
+        tk.Button(
+            btn_frame, text="🦠 VirusTotal", bg="#fab387", fg="#1e1e2e",
+            command=lambda: webbrowser.open(f"https://www.virustotal.com/gui/search/{vt_name}"),
+            **lnk_style
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            btn_frame, text="Close", bg="#45475a", fg="#cdd6f4",
+            command=win.destroy, **lnk_style
         ).pack(side="left")
 
     def _decide(self, action: str):
@@ -217,7 +305,7 @@ class DashboardWindow:
             return
 
         self.root = tk.Tk()
-        self.root.title("NetGuard — Network Monitor")
+        self.root.title("Dimedropper — Network Monitor")
         self.root.geometry("1050x650")
         self.root.configure(bg="#1e1e2e")
         self.root.protocol("WM_DELETE_WINDOW", self.hide)
@@ -242,7 +330,7 @@ class DashboardWindow:
         header.pack(fill="x")
         header.pack_propagate(False)
         tk.Label(
-            header, text="🛡  NetGuard", bg="#181825", fg="#89b4fa",
+            header, text="🛡  Dimedropper", bg="#181825", fg="#89b4fa",
             font=("Segoe UI", 16, "bold")
         ).pack(side="left", padx=15, pady=10)
 
@@ -437,7 +525,7 @@ class DashboardWindow:
             action_display = "🚫 BLOCK" if r["action"] == "block" else "✅ ALLOW"
             self.rules_tree.insert("", "end", values=(
                 r["app_name"] or "Unknown", r["exe_path"], action_display, ts
-            ), iid=r["exe_path"])
+            ))
 
     def _refresh_history(self):
         filt = self.history_filter.get().strip() if hasattr(self, 'history_filter') else None
@@ -478,13 +566,13 @@ class DashboardWindow:
     def _context_action(self, action: str):
         info = self._get_selected_live_exe()
         if not info or not info[1]:
-            messagebox.showwarning("NetGuard", "Could not determine executable path.")
+            messagebox.showwarning("Dimedropper", "Could not determine executable path.")
             return
         app_name, exe_path = info
         set_rule(self.db_conn, exe_path, app_name, action)
         sync_rule_to_firewall(exe_path, action)
         verb = "blocked" if action == "block" else "allowed"
-        messagebox.showinfo("NetGuard", f"{app_name} has been {verb}.")
+        messagebox.showinfo("Dimedropper", f"{app_name} has been {verb}.")
         self._refresh_rules()
 
     def _copy_remote(self):
@@ -498,7 +586,7 @@ class DashboardWindow:
         sel = self.rules_tree.selection()
         if not sel:
             return
-        exe_path = sel[0]
+        exe_path = self.rules_tree.item(sel[0], "values")[1]
         delete_rule(self.db_conn, exe_path)
         remove_rule(exe_path)
         self._refresh_rules()
@@ -506,7 +594,7 @@ class DashboardWindow:
 
 # ── Application Controller ────────────────────────────────────
 
-class NetGuardApp:
+class DimedropperApp:
     """Top-level controller: wires together monitor, database, tray icon, and dashboard."""
 
     def __init__(self):
@@ -524,7 +612,7 @@ class NetGuardApp:
 
         # Start monitoring
         self.monitor.start()
-        logger.info("NetGuard started")
+        logger.info("Dimedropper started")
 
         # Start the alert consumer thread
         self._alert_thread = threading.Thread(target=self._alert_consumer, daemon=True)
@@ -545,7 +633,7 @@ class NetGuardApp:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", self._quit),
         )
-        self._tray_icon = pystray.Icon("NetGuard", icon_image, "NetGuard", menu)
+        self._tray_icon = pystray.Icon("Dimedropper", icon_image, "Dimedropper", menu)
         self._tray_icon.run()
 
     def _on_new_connection(self, conn: ConnectionInfo):

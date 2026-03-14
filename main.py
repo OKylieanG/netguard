@@ -1,5 +1,5 @@
 """
-NetGuard — Little Snitch for Windows
+Dimedropper — Little Snitch for Windows
 Entry point. Run as Administrator for full firewall control.
 
 Usage:
@@ -20,7 +20,7 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("netguard")
+logger = logging.getLogger("dimedropper")
 
 
 def check_dependencies():
@@ -41,7 +41,7 @@ def check_dependencies():
 
     if missing:
         print("=" * 55)
-        print("  NetGuard — Missing Dependencies")
+        print("  Dimedropper — Missing Dependencies")
         print("=" * 55)
         print()
         print("  Install them with:")
@@ -62,7 +62,7 @@ def run_cli():
     from monitor import snapshot_connections
     from resolver import resolve
 
-    print("NetGuard CLI — Live Connections (Ctrl+C to stop)")
+    print("Dimedropper CLI — Live Connections (Ctrl+C to stop)")
     print("-" * 90)
     print(f"{'Application':<25} {'PID':<8} {'Remote Host':<35} {'Port':<7} {'Proto':<6} {'Status'}")
     print("-" * 90)
@@ -90,7 +90,7 @@ def main():
         run_cli()
         return
 
-    from app import NetGuardApp
+    from app import DimedropperApp
     from firewall import is_admin
 
     if not is_admin():
@@ -99,7 +99,7 @@ def main():
             "Right-click → Run as Administrator for full functionality."
         )
 
-    app = NetGuardApp()
+    app = DimedropperApp()
 
     if "--dashboard" in sys.argv:
         # Skip tray, open dashboard directly

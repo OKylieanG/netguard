@@ -1,5 +1,5 @@
 """
-NetGuard — Windows Firewall integration
+Dimedropper — Windows Firewall integration
 Creates/removes outbound firewall rules using `netsh advfirewall`.
 Requires Administrator privileges.
 """
@@ -10,9 +10,9 @@ import ctypes
 import os
 import sys
 
-logger = logging.getLogger("netguard.firewall")
+logger = logging.getLogger("dimedropper.firewall")
 
-RULE_PREFIX = "NetGuard_"  # Prefix for all rules we create, so we can track them
+RULE_PREFIX = "Dimedropper_"  # Prefix for all rules we create, so we can track them
 
 
 def is_admin() -> bool:
@@ -79,7 +79,7 @@ def block_app(exe_path: str) -> bool:
         "action=block",
         f"program={exe_path}",
         "enable=yes",
-        f"description=Blocked by NetGuard",
+        f"description=Blocked by Dimedropper",
     ])
     success = result.returncode == 0
     if success:
@@ -107,7 +107,7 @@ def allow_app(exe_path: str) -> bool:
         "action=allow",
         f"program={exe_path}",
         "enable=yes",
-        f"description=Allowed by NetGuard",
+        f"description=Allowed by Dimedropper",
     ])
     success = result.returncode == 0
     if success:
@@ -116,7 +116,7 @@ def allow_app(exe_path: str) -> bool:
 
 
 def remove_rule(exe_path: str) -> bool:
-    """Remove any NetGuard rule for the given executable."""
+    """Remove any Dimedropper rule for the given executable."""
     name = _rule_name(exe_path)
     return _remove_rule(name)
 
@@ -129,8 +129,8 @@ def _remove_rule(name: str) -> bool:
     return result.returncode == 0
 
 
-def list_netguard_rules() -> list[dict]:
-    """List all firewall rules created by NetGuard."""
+def list_dimedropper_rules() -> list[dict]:
+    """List all firewall rules created by Dimedropper."""
     result = _run_netsh([
         "advfirewall", "firewall", "show", "rule",
         f"name=all", "dir=out", "verbose",

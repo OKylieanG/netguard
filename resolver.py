@@ -1,5 +1,5 @@
 """
-NetGuard — DNS Resolver
+Dimedropper — DNS Resolver
 Caches reverse DNS lookups so the UI can show hostnames instead of raw IPs.
 """
 
@@ -8,7 +8,7 @@ import threading
 import logging
 from functools import lru_cache
 
-logger = logging.getLogger("netguard.resolver")
+logger = logging.getLogger("dimedropper.resolver")
 
 _cache: dict[str, str] = {}
 _lock = threading.Lock()

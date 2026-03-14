@@ -1,5 +1,5 @@
 """
-NetGuard — Connection Monitor
+Dimedropper — Connection Monitor
 Polls active network connections via psutil, detects new outbound connections,
 and feeds events to callbacks.
 """
@@ -13,7 +13,7 @@ from typing import Callable
 
 import psutil
 
-logger = logging.getLogger("netguard.monitor")
+logger = logging.getLogger("dimedropper.monitor")
 
 POLL_INTERVAL = 1.0  # seconds
 
@@ -115,7 +115,7 @@ class ConnectionMonitor:
         if self._running:
             return
         self._running = True
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="NetGuardMonitor")
+        self._thread = threading.Thread(target=self._loop, daemon=True, name="DimedropperMonitor")
         self._thread.start()
         logger.info("Connection monitor started")
 

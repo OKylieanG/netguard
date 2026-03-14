@@ -1,5 +1,4 @@
-This was totally vibecoded so it's probably a big old vulnerability. Use at own risk.
-# 🛡 NetGuard — Network Monitor for Windows
+# 🛡 Dimedropper — Network Monitor for Windows
 
 A lightweight "Little Snitch for Windows" — monitors every outbound network connection, alerts you when new apps phone home, and lets you block or allow them through Windows Firewall with one click.
 
@@ -43,17 +42,17 @@ When an app connects to the internet for the first time, a popup appears with:
 - Remote host (with async reverse DNS)
 - **Allow** / **Block** / **Dismiss** buttons
 
-Your decision is saved permanently — NetGuard won't ask about the same app again.
+Your decision is saved permanently — Dimedropper won't ask about the same app again.
 
 ### Firewall Integration
-When you Allow or Block an app, NetGuard creates a Windows Firewall outbound rule via:
+When you Allow or Block an app, Dimedropper creates a Windows Firewall outbound rule via:
 ```
-netsh advfirewall firewall add rule name=NetGuard_app.exe dir=out action=block program=C:\path\to\app.exe
+netsh advfirewall firewall add rule name=Dimedropper_app.exe dir=out action=block program=C:\path\to\app.exe
 ```
-All NetGuard rules are prefixed with `NetGuard_` so they're easy to identify and clean up.
+All Dimedropper rules are prefixed with `Dimedropper_` so they're easy to identify and clean up.
 
 ### Data Storage
-Everything is stored in `~/.netguard/netguard.db` (SQLite):
+Everything is stored in `~/.dimedropper/dimedropper.db` (SQLite):
 - **rules** — Your allow/block decisions
 - **connection_log** — Full history of observed connections
 - **first_seen** — Tracks when each app was first detected
@@ -76,9 +75,9 @@ The dashboard has three tabs:
 ## Architecture
 
 ```
-netguard/
+dimedropper/
 ├── main.py          Entry point — CLI arg parsing, dependency check
-├── app.py           NetGuardApp controller, tray icon, alert popups, dashboard UI
+├── app.py           DimedropperApp controller, tray icon, alert popups, dashboard UI
 ├── monitor.py       Connection polling via psutil, new-connection detection
 ├── firewall.py      Windows Firewall management via netsh advfirewall
 ├── database.py      SQLite schema, rule/log CRUD operations
